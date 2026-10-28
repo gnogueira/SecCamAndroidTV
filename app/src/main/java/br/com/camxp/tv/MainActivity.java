@@ -64,7 +64,7 @@ public final class MainActivity extends Activity {
         MediaPlayer player;
         Media media;
         Model.Watchdog watch;
-        String state = "Aguardando";
+        String state = "Waiting";
     }
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
     private void log(String value) {
@@ -84,24 +84,24 @@ public final class MainActivity extends Activity {
         catch (Exception e) { password = ""; configured = false; }
         int[] channels;
         try { channels = Model.channels(prefs.getString("channels", "1,2")); }
-        catch (IllegalArgumentException e) { channels = new int[]{1, 2}; log("Lista inválida; usando canais 1 e 2."); }
+        catch (IllegalArgumentException e) { channels = new int[]{1, 2}; log("Invalid channel list; using channels 1 and 2."); }
         for (int i = 0; i < slots.length; i++) {
             Slot s = slots[i] = new Slot();
             if (i < channels.length) { s.channel = channels[i]; s.active = true; }
         }
         root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(0xff09141f);
         toolbar = new LinearLayout(this); toolbar.setGravity(Gravity.CENTER_VERTICAL); toolbar.setPadding(dp(8), dp(2), dp(8), dp(2));
-        addButton("Câmeras", this::cameraMenu);
+        addButton("Cameras", this::cameraMenu);
         addButton("Layout", this::layoutMenu);
         addButton("NVR", this::configure);
-        addButton("Reconectar", () -> reconnectAll("Reconexão manual"));
-        addButton("Tela cheia", () -> setControls(false));
-        addButton("Mais", this::mainMenu);
+        addButton("Reconnect", () -> reconnectAll("Manual reconnection"));
+        addButton("Fullscreen", () -> setControls(false));
+        addButton("More", this::mainMenu);
         root.addView(toolbar, new LinearLayout.LayoutParams(-1, dp(58)));
         grid = new Grid();
         for (Slot s : slots) { s.tile = new Tile(s); grid.addView(s.tile); }
         empty = new TextView(this); empty.setTextColor(Color.WHITE); empty.setTextSize(20); empty.setGravity(Gravity.CENTER);
-        empty.setText("Nenhuma câmera selecionada\nPressione OK/Menu e escolha Câmeras → Adicionar.");
+        empty.setText("No cameras selected.\nPress OK/Menu and choose Cameras → Add camera.");
         empty.setFocusable(true); empty.setOnClickListener(v -> cameraMenu()); grid.addView(empty);
         root.addView(grid, new LinearLayout.LayoutParams(-1, 0, 1)); setContentView(root);
         immersive(); refresh(); firstButton.requestFocus();
@@ -109,10 +109,10 @@ public final class MainActivity extends Activity {
             vlc = new LibVLC(getApplicationContext(), new ArrayList<>(Arrays.asList("--no-audio", "--no-osd", "--no-video-title-show", "--stats", "--quiet")));
             log("SecCamAndroidTV 1.2 · LibVLC " + LibVLC.version());
         } catch (Throwable e) {
-            android.util.Log.e("CamTV", "Falha na inicialização do mecanismo de vídeo", e);
-            log("Não foi possível carregar o mecanismo de vídeo.");
-            new AlertDialog.Builder(this).setTitle("SecCamAndroidTV").setMessage("Não foi possível iniciar o mecanismo de vídeo neste aparelho.")
-                .setPositiveButton("Fechar", (d, w) -> finish()).show(); return;
+            android.util.Log.e("CamTV", "Failed to initialize video engine", e);
+            log("Could not load the video engine.");
+            new AlertDialog.Builder(this).setTitle("SecCamAndroidTV").setMessage("Could not start the video engine on this device.")
+                .setPositiveButton("Close", (d, w) -> finish()).show(); return;
         }
         if (!configured) main.postDelayed(this::configure, 300);
     }
@@ -147,11 +147,11 @@ public final class MainActivity extends Activity {
             if (s.tile.getVisibility() != visible) { s.tile.setVisibility(visible); changed = true; }
             if (!s.active) continue;
             String status = s.state;
-            if (s.stopping) status = "Encerrando conexão anterior…";
-            else if (s.waiting) status = "Conexão em " + Math.max(0, (s.due - SystemClock.elapsedRealtime() + 999) / 1000) + " s";
-            String title = "Câmera " + s.channel + " · " + status;
+            if (s.stopping) status = "Stopping previous connection…";
+            else if (s.waiting) status = "Connecting in " + Math.max(0, (s.due - SystemClock.elapsedRealtime() + 999) / 1000) + " s";
+            String title = "Camera " + s.channel + " · " + status;
             if (!title.contentEquals(s.tile.title.getText())) s.tile.title.setText(title);
-            int notice = controls || s.stopping || s.waiting || !"Ao vivo".equals(s.state) ? View.VISIBLE : View.GONE;
+            int notice = controls || s.stopping || s.waiting || !"Live".equals(s.state) ? View.VISIBLE : View.GONE;
             if (s.tile.title.getVisibility() != notice) { s.tile.title.setVisibility(notice); changed = true; }
         }
         int emptyVisibility = count() == 0 ? View.VISIBLE : View.GONE;
@@ -163,7 +163,7 @@ public final class MainActivity extends Activity {
         if (show) firstButton.requestFocus();
         else {
             for (Slot s : slots) if (s.active) { s.tile.requestFocus(); break; }
-            toast("OK ou Menu abre os controles. Voltar mostra a barra.");
+            toast("OK or Menu opens the controls. Back shows the toolbar.");
         }
     }
     private void showList(AlertDialog dialog) {
@@ -172,60 +172,60 @@ public final class MainActivity extends Activity {
     }
     private void mainMenu() {
         showList(new AlertDialog.Builder(this).setTitle("SecCamAndroidTV")
-                .setItems(new String[]{"Câmeras", "Layout", "Configurar NVR", "Reconectar todas", controls ? "Tela cheia" : "Mostrar barra", "Diagnóstico", "Sair"}, (d, which) -> {
+                .setItems(new String[]{"Cameras", "Layout", "Configure NVR", "Reconnect all", controls ? "Fullscreen" : "Show toolbar", "Diagnostics", "Exit"}, (d, which) -> {
                     switch (which) {
                         case 0: cameraMenu(); break; case 1: layoutMenu(); break; case 2: configure(); break;
-                        case 3: reconnectAll("Reconexão manual"); break; case 4: setControls(!controls); break;
+                        case 3: reconnectAll("Manual reconnection"); break; case 4: setControls(!controls); break;
                         case 5: diagnostics(); break; case 6: confirmExit(); break;
                     }
                 }).create());
     }
     private void cameraMenu() {
-        showList(new AlertDialog.Builder(this).setTitle("Câmeras · " + count() + "/16")
-                .setItems(new String[]{"Adicionar câmera", "Remover câmera", "Alterar canal", "Reconectar uma câmera"}, (d, which) -> {
+        showList(new AlertDialog.Builder(this).setTitle("Cameras · " + count() + "/16")
+                .setItems(new String[]{"Add camera", "Remove camera", "Change channel", "Reconnect one camera"}, (d, which) -> {
                     if (which == 0) chooseChannel(null);
-                    else chooseSlot(which == 1 ? "Remover" : which == 2 ? "Alterar canal" : "Reconectar", s -> {
-                        if (which == 1) remove(s); else if (which == 2) chooseChannel(s); else retry(s, "Reconexão manual", false);
+                    else chooseSlot(which == 1 ? "Remove" : which == 2 ? "Change channel" : "Reconnect", s -> {
+                        if (which == 1) remove(s); else if (which == 2) chooseChannel(s); else retry(s, "Manual reconnection", false);
                     });
                 }).create());
     }
     private interface SlotAction { void run(Slot slot); }
     private void chooseSlot(String title, SlotAction action) {
         ArrayList<Slot> values = new ArrayList<>(); ArrayList<String> labels = new ArrayList<>();
-        for (Slot s : slots) if (s.active) { values.add(s); labels.add("Câmera " + s.channel); }
-        if (values.isEmpty()) { toast("Nenhuma câmera selecionada."); return; }
+        for (Slot s : slots) if (s.active) { values.add(s); labels.add("Camera " + s.channel); }
+        if (values.isEmpty()) { toast("No cameras selected."); return; }
         showList(new AlertDialog.Builder(this).setTitle(title).setItems(labels.toArray(new String[0]), (d, n) -> action.run(values.get(n))).create());
     }
     private void chooseChannel(Slot current) {
-        if (current == null && count() >= Model.MAX) { toast("Limite de 16 câmeras atingido."); return; }
-        if (current != null && current.stopping) { toast("Aguarde o encerramento desse painel."); return; }
+        if (current == null && count() >= Model.MAX) { toast("The 16-camera limit has been reached."); return; }
+        if (current != null && current.stopping) { toast("Wait for this panel to stop."); return; }
         ArrayList<Integer> values = new ArrayList<>(); ArrayList<String> labels = new ArrayList<>();
-        for (int ch = 1; ch <= Model.MAX; ch++) if (!selected(ch, current)) { values.add(ch); labels.add("Câmera " + ch); }
-        if (values.isEmpty()) { toast("Todos os canais estão selecionados ou encerrando."); return; }
-        showList(new AlertDialog.Builder(this).setTitle(current == null ? "Adicionar câmera" : "Alterar canal")
+        for (int ch = 1; ch <= Model.MAX; ch++) if (!selected(ch, current)) { values.add(ch); labels.add("Camera " + ch); }
+        if (values.isEmpty()) { toast("All channels are selected or stopping."); return; }
+        showList(new AlertDialog.Builder(this).setTitle(current == null ? "Add camera" : "Change channel")
                 .setItems(labels.toArray(new String[0]), (d, n) -> {
                     int channel = values.get(n); Slot target = current;
                     if (target == null) for (Slot s : slots) if (!s.active && !s.stopping && s.player == null) { target = s; break; }
-                    if (target == null) { toast("Aguarde uma sessão anterior encerrar."); return; }
-                    if (selected(channel, target)) { toast("Esse canal já está selecionado."); return; }
+                    if (target == null) { toast("Wait for a previous session to stop."); return; }
+                    if (selected(channel, target)) { toast("This channel is already selected."); return; }
                     if (target.active && target.channel == channel) return;
                     int previous = target.channel; boolean wasActive = target.active;
                     target.channel = channel; target.active = true;
-                    if (!saveChannels()) { target.channel = previous; target.active = wasActive; toast("Não foi possível salvar."); return; }
+                    if (!saveChannels()) { target.channel = previous; target.active = wasActive; toast("Could not save."); return; }
                     target.attempts = 0;
-                    retry(target, wasActive ? "Canal alterado" : "Câmera adicionada", false); refresh();
+                    retry(target, wasActive ? "Channel changed" : "Camera added", false); refresh();
                 }).create());
     }
     private void remove(Slot s) {
         s.active = false;
-        if (!saveChannels()) { s.active = true; toast("Não foi possível salvar a remoção."); return; }
-        retire(s, 0); log("Câmera " + s.channel + " removida."); refresh(); firstButton.requestFocus();
+        if (!saveChannels()) { s.active = true; toast("Could not save the removal."); return; }
+        retire(s, 0); log("Camera " + s.channel + " removed."); refresh(); firstButton.requestFocus();
     }
     private void layoutMenu() {
         showList(new AlertDialog.Builder(this).setTitle("Layout")
-                .setSingleChoiceItems(new String[]{"Lado a lado", "Uma acima da outra", "Mosaico automático"}, mode, (d, n) -> {
+                .setSingleChoiceItems(new String[]{"Side by side", "Stacked", "Automatic grid"}, mode, (d, n) -> {
                     if (prefs.edit().putInt("layout", n).commit()) { mode = n; grid.requestLayout(); }
-                    else toast("Não foi possível salvar o layout."); d.dismiss();
+                    else toast("Could not save the layout."); d.dismiss();
                 }).create());
     }
     private EditText field(LinearLayout box, String label, String value, int input) {
@@ -235,49 +235,49 @@ public final class MainActivity extends Activity {
     private void configure() {
         if (destroyed || isFinishing()) return;
         LinearLayout box = new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL); box.setPadding(dp(24), dp(8), dp(24), dp(8));
-        TextView intro = new TextView(this); intro.setText("Conexão direta ao NVR. A senha fica somente nesta TV, criptografada.\nCada câmera usa uma sessão do NVR; confira o limite do seu aparelho.");
+        TextView intro = new TextView(this); intro.setText("Direct NVR connection. The password is encrypted and stored only on this TV.\nEach camera uses an NVR session; check your device limit.");
         intro.setTextColor(0xffd7e9f2); box.addView(intro);
-        EditText ip = field(box, "IP do NVR", host, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-        EditText portField = field(box, "Porta RTSP", String.valueOf(port), InputType.TYPE_CLASS_NUMBER);
-        EditText login = field(box, "Usuário", user, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-        EditText secret = field(box, "Senha", password, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        EditText ip = field(box, "NVR IP address", host, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        EditText portField = field(box, "RTSP port", String.valueOf(port), InputType.TYPE_CLASS_NUMBER);
+        EditText login = field(box, "Username", user, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        EditText secret = field(box, "Password", password, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         Button decoder = new Button(this); final boolean[] soft = {software};
-        Runnable update = () -> decoder.setText(soft[0] ? "Decodificação: software" : "Decodificação: automática (hardware permitido)"); update.run();
+        Runnable update = () -> decoder.setText(soft[0] ? "Decoding: software" : "Decoding: automatic (hardware allowed)"); update.run();
         decoder.setOnClickListener(v -> { soft[0] = !soft[0]; update.run(); }); box.addView(decoder);
         ScrollView scroll = new ScrollView(this); scroll.addView(box);
-        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("Configurar NVR")
-                .setView(scroll).setNegativeButton("Cancelar", null).setPositiveButton("Salvar e conectar", null).create();
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("Configure NVR")
+                .setView(scroll).setNegativeButton("Cancel", null).setPositiveButton("Save and connect", null).create();
         dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String h = ip.getText().toString().trim(), u = login.getText().toString().trim(); int p;
-            try { p = Integer.parseInt(portField.getText().toString()); } catch (NumberFormatException e) { portField.setError("Porta inválida"); return; }
-            if (!Model.ipv4(h)) { ip.setError("Informe um endereço IPv4"); return; }
-            if (p < 1 || p > 65535) { portField.setError("Porta entre 1 e 65535"); return; }
-            if (u.isEmpty()) { login.setError("Informe o usuário"); return; }
+            try { p = Integer.parseInt(portField.getText().toString()); } catch (NumberFormatException e) { portField.setError("Invalid port"); return; }
+            if (!Model.ipv4(h)) { ip.setError("Enter an IPv4 address"); return; }
+            if (p < 1 || p > 65535) { portField.setError("Port must be between 1 and 65535"); return; }
+            if (u.isEmpty()) { login.setError("Enter a username"); return; }
             try {
                 SharedPreferences.Editor edit = prefs.edit().putString("host", h).putInt("port", p).putString("user", u)
                         .putBoolean("software", soft[0]).putBoolean("configured", true);
                 SecretStore.write(edit, secret.getText().toString());
                 if (!edit.commit()) throw new IllegalStateException();
-            } catch (Exception e) { toast("Não foi possível proteger e salvar a configuração nesta TV."); return; }
+            } catch (Exception e) { toast("Could not protect and save settings on this TV."); return; }
             boolean previous = configured;
             host = h; port = p; user = u; password = secret.getText().toString(); software = soft[0]; configured = true;
             for (Slot s : slots) if (s.active) { s.attempts = 0; retire(s, previous ? 60000 : 1000); }
-            log("Configuração do NVR salva; senha omitida do diagnóstico."); dialog.dismiss(); refresh();
+            log("NVR settings saved; password omitted from diagnostics."); dialog.dismiss(); refresh();
         }));
         dialog.show();
     }
     private void diagnostics() {
         StringBuilder text = new StringBuilder("SecCamAndroidTV 1.2\nAndroid " + android.os.Build.VERSION.RELEASE + " · "
-                + android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL + "\nArquiteturas: " + Arrays.toString(android.os.Build.SUPPORTED_ABIS)
-                + "\nCâmeras selecionadas: " + count() + "/16\n\n");
+                + android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL + "\nArchitectures: " + Arrays.toString(android.os.Build.SUPPORTED_ABIS)
+                + "\nSelected cameras: " + count() + "/16\n\n");
         for (String line : history) text.append(line).append('\n');
         TextView body = new TextView(this); body.setText(text); body.setTextIsSelectable(true); body.setPadding(dp(16), dp(8), dp(16), dp(8));
         ScrollView view = new ScrollView(this); view.addView(body);
-        new AlertDialog.Builder(this).setTitle("Diagnóstico sem credenciais").setView(view).setPositiveButton("Fechar", null).show();
+        new AlertDialog.Builder(this).setTitle("Diagnostics without credentials").setView(view).setPositiveButton("Close", null).show();
     }
     private void confirmExit() {
-        new AlertDialog.Builder(this).setTitle("Sair do SecCamAndroidTV?").setMessage("As conexões deste aplicativo serão encerradas.")
-                .setPositiveButton("Sair", (d, n) -> finish()).setNegativeButton("Continuar", null).show();
+        new AlertDialog.Builder(this).setTitle("Exit SecCamAndroidTV?").setMessage("This application will close its connections.")
+                .setPositiveButton("Exit", (d, n) -> finish()).setNegativeButton("Continue", null).show();
     }
     @Override public void onBackPressed() { if (!controls) setControls(true); else confirmExit(); }
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
@@ -309,7 +309,7 @@ public final class MainActivity extends Activity {
         if (!s.active) return;
         long delay = automatic ? Model.retryDelay(s.attempts) : 60000;
         if (automatic && s.attempts < 4) s.attempts++;
-        log("Câmera " + s.channel + ": " + reason + "; nova tentativa após " + delay / 1000 + " s."); retire(s, delay);
+        log("Camera " + s.channel + ": " + reason + "; retry after " + delay / 1000 + " s."); retire(s, delay);
     }
     private void retire(Slot s, long delay) {
         s.delayAfterStop = delay;
@@ -328,16 +328,16 @@ public final class MainActivity extends Activity {
             catch (RuntimeException ignored) { }
             final boolean complete = success;
             main.post(() -> {
-                if (!complete) { log("Uma sessão não confirmou encerramento; não será sobreposta por outra."); return; }
+                if (!complete) { log("A session did not confirm shutdown; no replacement will be started."); return; }
                 s.stopping = false; s.waiting = s.active && running && configured;
                 s.safeReconnectAt = now() + 60000; s.due = now() + s.delayAfterStop;
-                s.state = "Aguardando"; refresh(); releaseIfIdle();
+                s.state = "Waiting"; refresh(); releaseIfIdle();
             });
         }); refresh();
     }
     private void connect(Slot s) {
         if (vlc == null || !running || !configured || !s.active || s.stopping || s.player != null) return;
-        s.waiting = false; s.statsWarned = false; s.watch = new Model.Watchdog(now()); s.state = "Conectando";
+        s.waiting = false; s.statsWarned = false; s.watch = new Model.Watchdog(now()); s.state = "Connecting";
         try {
             String address = "rtsp://" + host + ":" + port + "/user=" + Uri.encode(user) + "&password=" + Uri.encode(password)
                     + "&channel=" + s.channel + "&stream=1.sdp?real_stream";
@@ -354,14 +354,14 @@ public final class MainActivity extends Activity {
             }));
             p.setEventListener(event -> {
                 if (s.player != p || destroyed) return;
-                if (event.type == MediaPlayer.Event.Playing) s.state = "Ao vivo";
-                else if (event.type == MediaPlayer.Event.Opening) s.state = "Conectando";
+                if (event.type == MediaPlayer.Event.Playing) s.state = "Live";
+                else if (event.type == MediaPlayer.Event.Opening) s.state = "Connecting";
                 else if (event.type == MediaPlayer.Event.Vout) s.vout = event.getVoutCount();
-                else if (event.type == MediaPlayer.Event.EncounteredError || event.type == MediaPlayer.Event.EndReached) { retry(s, "Conexão encerrada ou com erro", true); return; }
+                else if (event.type == MediaPlayer.Event.EncounteredError || event.type == MediaPlayer.Event.EndReached) { retry(s, "Connection ended or failed", true); return; }
                 refresh();
             });
-            s.tile.fit(); p.play(); log("Conexão solicitada: câmera " + s.channel + ".");
-        } catch (RuntimeException e) { retry(s, "Falha ao iniciar o vídeo", true); }
+            s.tile.fit(); p.play(); log("Connection requested: camera " + s.channel + ".");
+        } catch (RuntimeException e) { retry(s, "Failed to start video", true); }
     }
     private final Runnable ticker = new Runnable() {
         @Override public void run() {
@@ -375,11 +375,11 @@ public final class MainActivity extends Activity {
                 for (Slot s : slots) if (s.active && s.player != null && s.watch != null) {
                     try {
                         IMedia.Stats stats = s.media.getStats();
-                        if (stats == null && !s.statsWarned) { s.statsWarned = true; log("Contadores indisponíveis na câmera " + s.channel + "; monitorando estado."); }
+                        if (stats == null && !s.statsWarned) { s.statsWarned = true; log("Frame counters unavailable for camera " + s.channel + "; monitoring state."); }
                         String reason = s.watch.sample(time, s.player.getPlayerState(), stats != null, stats == null ? 0 : stats.displayedPictures, s.vout > 0);
                         if (s.watch.healthy) s.attempts = 0;
                         if (reason != null) retry(s, reason, true);
-                    } catch (RuntimeException e) { retry(s, "Falha ao consultar o vídeo", true); }
+                    } catch (RuntimeException e) { retry(s, "Failed to check video", true); }
                 }
             }
             refresh(); main.postDelayed(this, 1000);
@@ -423,9 +423,9 @@ public final class MainActivity extends Activity {
             setOnFocusChangeListener((v, focus) -> {
                 GradientDrawable bg = new GradientDrawable(); bg.setColor(Color.BLACK); bg.setStroke(dp(2), focus ? 0xff20bad6 : 0xff142536); setBackground(bg);
             });
-            setOnClickListener(v -> { if (controls) showList(new AlertDialog.Builder(MainActivity.this).setTitle("Câmera " + slot.channel)
-                    .setItems(new String[]{"Alterar canal", "Remover", "Reconectar", "Menu principal"}, (d, n) -> {
-                        if (n == 0) chooseChannel(slot); else if (n == 1) remove(slot); else if (n == 2) retry(slot, "Reconexão manual", false); else mainMenu();
+            setOnClickListener(v -> { if (controls) showList(new AlertDialog.Builder(MainActivity.this).setTitle("Camera " + slot.channel)
+                    .setItems(new String[]{"Change channel", "Remove", "Reconnect", "Main menu"}, (d, n) -> {
+                        if (n == 0) chooseChannel(slot); else if (n == 1) remove(slot); else if (n == 2) retry(slot, "Manual reconnection", false); else mainMenu();
                     }).create()); else mainMenu(); });
             setOnKeyListener((v, key, event) -> {
                 if (event.getAction() != KeyEvent.ACTION_DOWN) return false;

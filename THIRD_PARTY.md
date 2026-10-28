@@ -1,7 +1,7 @@
-# Componentes de terceiros
+# Third-party components
 
-- **LibVLC Android 3.7.7**, da VideoLAN: incorporada via `org.videolan.android:libvlc-all`. A LibVLC é disponibilizada sob LGPL; componentes e módulos distribuídos junto com o binário podem ter condições adicionais. Consulte o artefato e os fontes da versão exata antes de publicar um APK: https://code.videolan.org/videolan/libvlcjni e https://repo.maven.apache.org/maven2/org/videolan/android/libvlc-all/3.7.7/.
-- **Gradle Wrapper**, do projeto Gradle, sob Apache License 2.0: https://github.com/gradle/gradle.
-- **Android Gradle Plugin e dependências transitivas**: confira os metadados e licenças das versões efetivamente resolvidas ao montar cada release.
+- **LibVLC Android 3.7.7**, by VideoLAN, is bundled via `org.videolan.android:libvlc-all`. LibVLC is available under the LGPL; bundled components and modules may have additional conditions. Check the artifact and source for the exact version before distributing an APK: https://code.videolan.org/videolan/libvlcjni and https://repo.maven.apache.org/maven2/org/videolan/android/libvlc-all/3.7.7/.
+- **Gradle Wrapper**, from the Gradle project, is distributed under Apache License 2.0: https://github.com/gradle/gradle.
+- **Android Gradle Plugin and transitive dependencies**: check the metadata and licenses of the versions actually resolved for each release.
 
-A licença MIT do código próprio não substitui as licenças de terceiros. Complete a revisão dos avisos, licenças, fontes correspondentes e direitos de substituição/revinculação antes de redistribuir o APK com as bibliotecas nativas incluídas.
+The MIT License for this project's code does not replace third-party licenses. Complete the review of notices, licenses, corresponding source and replacement/relinking rights before distributing an APK containing native libraries.

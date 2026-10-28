@@ -10,14 +10,14 @@ public final class Model {
     public static int[] channels(String value) {
         if (value.trim().isEmpty()) return new int[0];
         String[] parts = value.split(",", -1);
-        if (parts.length > MAX) throw new IllegalArgumentException("Máximo de 16 câmeras");
+        if (parts.length > MAX) throw new IllegalArgumentException("Maximum of 16 cameras");
         int[] result = new int[parts.length];
         HashSet<Integer> seen = new HashSet<>();
         for (int i = 0; i < parts.length; i++) {
             String part = parts[i].trim();
-            if (!part.matches("[0-9]{1,2}")) throw new IllegalArgumentException("Canal inválido");
+            if (!part.matches("[0-9]{1,2}")) throw new IllegalArgumentException("Invalid channel");
             int n = Integer.parseInt(part);
-            if (n < 1 || n > MAX || !seen.add(n)) throw new IllegalArgumentException("Canal inválido ou repetido");
+            if (n < 1 || n > MAX || !seen.add(n)) throw new IllegalArgumentException("Invalid or duplicate channel");
             result[i] = n;
         }
         return result;
@@ -59,15 +59,15 @@ public final class Model {
         public Watchdog(long now) { start = progress = now; stable = -1; }
         /** null means healthy/waiting; otherwise a reason for recovery. */
         public String sample(long now, int state, boolean stats, int pictures, boolean video) {
-            if (state == 5 || state == 6 || state == 7) return "Conexão encerrada ou com erro";
+            if (state == 5 || state == 6 || state == 7) return "Connection ended or failed";
             if (stats && pictures > 0 && pictures != frames) {
                 frames = pictures; progress = now; seen = true;
                 if (stable < 0) stable = now;
                 if (now - stable >= 15000) healthy = true;
             }
             if (!stats && state == 3 && video) { start = progress = now; return null; }
-            if (!seen && now - start >= 45000) return "Sem primeiro quadro por 45 s";
-            if (seen && now - progress >= 30000) return "Sem novos quadros por 30 s";
+            if (!seen && now - start >= 45000) return "No first frame for 45 s";
+            if (seen && now - progress >= 30000) return "No new frames for 30 s";
             return null;
         }
     }

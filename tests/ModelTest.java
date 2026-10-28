@@ -25,6 +25,6 @@ public final class ModelTest {
         w = new Model.Watchdog(0); check(w.sample(120000, 3, false, 0, true) == null);
         check(Model.retryDelay(0) == 60000 && Model.retryDelay(1) == 120000 && Model.retryDelay(2) == 240000 && Model.retryDelay(20) == 300000);
         check(!Model.due(62999, 60000, 60000, true)); check(Model.due(63000, 60000, 60000, true));
-        System.out.println("OK: canais, limites, layouts, IP, quadros parados, cena estática, espera crescente e conexões espaçadas.");
+        System.out.println("OK: channels, limits, layouts, IP, stalled frames, static scene, backoff and spaced connections.");
     }
 }
