@@ -1,0 +1,15 @@
+.DS_Store
+.gradle/
+**/build/
+local.properties
+*.class
+*.apk
+*.aab
+*.idsig
+*.keystore
+*.jks
+*.p12
+*.pfx
+signing/
+password.txt
+*.log
